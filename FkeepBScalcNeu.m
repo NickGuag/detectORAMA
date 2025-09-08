@@ -16,12 +16,12 @@ function [FkeepBS, FkeepBSneu, FkeepNeu] = FkeepBScalc(Fkeep, Fneu, neuFactor)
         minFkeep = min(Fkeep, [], 1);
         FkeepBS = Fkeep - minFkeep;
     
-%% FKeepNeu = raw signal - (neuropil * neuFactor)
+%% FKeepNeu = raw signal (i.e., Fkeep) - (neuropil (i.e., Fneu) * multiplier (i.e. neuFactor) )
     %  subtract the Fneu from baseline Fkeep to generate FkeepNeu
         subFneu = Fneu * neuFactor;
         FkeepNeu = Fkeep - subFneu;
   
-%% FkeepBSneu  =   zeroed baseline FkeepNeu        
+%% FkeepBSneu  =   FkeepNeu with zeroed baseline        
      %FkeepNeu(FkeepNeu < 0) = 0;
 
     minFkeepNeu = min(FkeepNeu, [], 1);

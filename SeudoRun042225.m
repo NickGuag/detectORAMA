@@ -1,13 +1,22 @@
+
+%% Run each section sequentially. Do not run the whole script at once. 
+
+
 %% Load files from suite2p into Seudo 
 
-    % LoadC with relevent movie and s2p mat filenames
-        tiff_file = fullfile('Data', 'Data1441mcBSub1.tif');
-        mat_file = fullfile('Data', 'Data1441mcBSub1.mat');
-        ShortTitle = 'Data1441';
+    % LoadC with relevent movie and suite2p mat filenames (from folder
+    % 'Data')
+        tiff_file = fullfile('Data', 'Data1438mcBSub1.tif');
+        mat_file = fullfile('Data', 'Data1438mcBSub1.mat');
+        ShortTitle = 'Data1438';
         
         
         %load data into matlab for use with suedo
-        suite2p_to_seudo;
+         suite2p_to_seudo;
+         % F = fluorescence trace
+         % FKeep = fluorescence trace of kept ROIs
+         % Fneu = neuropil fluorescence trace for kept ROIs
+         % FkeepNeu =  FKeep - FkeepNeu
  %% Generate timecourse for analysis      
         
     %generate baseline timecourse where min value = 0 (FkeepBS), or neurpil subtractred timecourse (FkeepNeu * multiplier). 
@@ -15,13 +24,14 @@
        
         [FkeepBS, FkeepBSneu, FkeepNeu]=FkeepBScalcNeu(Fkeep, Fneu, .9);
         
-    %Run only if you want to use FkeepBSneu instead of FkeepBS. Overwrites FkeepBS.
+    %Run if you want to use FkeepNeu/FkeepBSneu instead of FkeepBS. Overwrites FkeepBS.
+    % I have been using FkeepBS = FkeepNeu exclusively.
             
         FkeepBS = FkeepNeu; 
         % FkeepBS = FkeepBSneu;
        
     %Find baseline mean and std dev from FkeepBS, within window of windowSize rows (second input value in function).
-         % excludes cells from analysis if min std * excSTD is < max std
+         % excludes cells from analysis (does not remove them) if min std * excSTD is < max std
          % (eliminated in isArtifact after classifyTransients)
          
         excSTD = 3;
@@ -35,36 +45,45 @@
     % 
     % peakWindow 
     %     % finds peak of the transient signal within a rows -1 to peakWindow, and moves the transient marker to that time point.
-    %     % Range 5-8  higher gets more transients, sometimes. 
+    %     % Suggested range 5-8  higher gets more transients... sometimes. 5 works 99% of the time
     % 
     % % ThreshFraction
-    %     % the fraction of peak intensity of deconvoluted fluoresenct signal; smaller transients will be eliminated
-    %     % Range: .1-.2; good intervals to try are .1, .12, .15, .2
+    %     % the fraction of peak intensity of deconvoluted fluoresenct
+    %     signal ; smaller transients  (marked by T from sutie2p) will be
+    %     eliminated. e.g., .1 will elimnate all transiets that have peak fl intensity less
+    %     than 10% of the max transient fl. intensity.
+    %     % Suggested range: .01-.2; good intervals to try are .01, .05, .1, .12, .15, .2
     %     % Higher values = fewer events
     % 
     % % skipRows 
-    %     % For each event, starting with the highest amplitude, the amount of time in 0.1 second intervals trailing the transient in which no other event can occur.
-    %     % Range: 10-16; increase for fewer false postivives, decrease for too few events detected due to high event frequency. 
+    %     % For each event, starting with the highest amplitude, the amount
+    %     of time in 0.1 second intervals trailing the transient in which
+    %     no other event can occur. Directly related to event frequency
+    %     within a burst. Higher frequency, lower skipRows
+    %     % Suggested range: 6-16; increase for fewer false postivives, decrease for too few events detected due to high event frequency. 
     % 
     % 
     % % stdBaseMulti (Baseline SD*X) 
-    %     % a multiplier of the standard deviation dervied from baseline activity. any thing transient with signal less than StdBaseMulti * stdBase will be eliminated
-    %     % Range: 4-10 higher = fewer events near baseline
+    %     % a multiplier of the standard deviation dervied from baseline activity. any transient with peak fl. intensity less than StdBaseMulti * stdBaseBS (derived from BaselineStdFkeep function) will be eliminated
+    %     % Suggested range: 4-10 higher = fewer events near baseline
     % 
-    % % rowWindow (Window Size)
-    %     % number of rows it uses before and after (e.g. a value of 6 means 6 rows before, 6 rows after) to determine if the transient meets the threshhold to keep. 
-    %     % Range= 10-25, suggested intervals 10 15 20 25); Higher = more transients. works with stdMovingMulti to remove tiny spikes on big spikes. 
     % 
-    % % stdMovingMulti% (Window SD *X)
-    % a multiplier of the standard deviation from moving "baseline" defived from rowWindow, otherwise same as stdBaseMulti
-    % Range 3-6; decrease/increase will detect more/fewer events, respectively. designed to eliminate little peaks riding big peaks
+    % stdMovingMulti and rowWindow are used to remove tiny spikes riding on big spikes. 
+    %
+    % %rowWindow (Window Size)
+    %     % number of rows evaluated before and after (e.g. a value of 6 means 6 rows before, 6 rows after) to determine if the transient meets the threshhold to keep. 
+    %     % Suggested range= 6-25, suggested intervals 8 10 15 20 25); Higher = more transients. 
+    % 
+    % % stdMovingMulti% (Window STD *X)
+    %   % a multiplier of the standard deviation from moving "baseline" defined from rowWindow, otherwise same as stdBaseMulti
+    %   % Suggested range 3-6; decrease/increase will detect more/fewer events, respectively. designed to eliminate little peaks riding big peaks
     
-        peakWindow =5;  % Range 5
-        ThreshFraction = .01; %Range: .1-.2;
-        skipRows = 6; %Range: 4-14; 
-        stdBaseMulti =10; %Range: 5-20 
-        rowWindow = 7; % Range= 5-25
-        stdMovingMulti = 5; % Range 5; 
+        peakWindow =5;  
+        ThreshFraction = .01; 
+        skipRows = 6; 
+        stdBaseMulti =10; 
+        rowWindow = 7; 
+        stdMovingMulti = 5; 
         stnQuality = 0;
     
     % Put parameters together for CleanTF to read. Will overwrite any saved column parameters, so be sure to save in the GUI if you want to keep for certain cells. 
@@ -100,27 +119,37 @@
          se.computeTransientInfo('default','transientFrames', CleanTF, 'tPre', 5 , 'tPost', 13)
         
     
-    % Auto Clasify Transients  (set to detect all)
+    % Auto Clasify Transients  (set to detect all). May need to adjust
+    % corrThreshold slightly on an ROI to ROI bases, but .2 is usually
+    % pretty good. 
+
         corrThresh = .2;
 
         se.autoClassifyTransients('default','overwrite',true, 'corrThresh',0.2)
         
-    % Remove crappy cells
+    % Remove crappy ROIs that fail the std deve test (excludeStd) or are
+    % marked as having a quality of 1 in the visualizeCleanTF GUI. 
         
         isArtifact;
 
-    % View in GUI, manual correct if needed. 
+    % View in classifyTransients GUI, manually correct if needed. 
 
         se.classifyTransients
 
        
-%% Save        
+%% Save     
+        
+% in format for Christina's ORAMA analysis    
         SaveORAMA
+
+% matlab variables of transient analysis
         timestamp = datestr(now, 'yyyymmdd_HHMMSS');
         directory = 'C:\Users\nag4g\Documents\MATLAB\Suedo\Nick'; %replace with Directory locations
         filename = "se_" + ShortTitle + "_" + timestamp + ".mat";
         fullPath = fullfile(directory, filename);
         save(fullPath, '-v7.3');
+        
+ % save ORAMAs grouped by quality, inputed in visualizeCleanTF()       
         QualityControl;
         
         

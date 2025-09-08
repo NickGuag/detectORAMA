@@ -1,12 +1,6 @@
-function [meanBaseBS,stdBaseBS, excludeStd] = BaselineStdFkeep(FkeepBS,windSize, excSTD)
-%% Inputs
-    % FKeepBS = processed trace
-
-    % windSize = number of consecutive frames for finding baseline mean and
-    %   Std
-
-    % excSTD = the exclusion factor multiplied by the minSTD to determine
-    %   exclution
+function [meanBaseBS,stdBaseBS, excludeStd] = BaselineStdFkeep(FkeepBS,windSize)
+%UNTITLED Summary of this function goes here
+%   Detailed explanation goes here
 
 
 
@@ -44,8 +38,8 @@ function [meanBaseBS,stdBaseBS, excludeStd] = BaselineStdFkeep(FkeepBS,windSize,
                 end
              
           end
-        %Exclude ROI if the Signal to noise is <3 std dev
-        if maxStd < excSTD*minStd
+
+        if maxStd < 3*minStd
             excludeStd(col,1) = 1;
         end
         excludeStd(col,2) = maxStd / minStd;
