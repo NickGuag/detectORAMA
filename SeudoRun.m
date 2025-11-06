@@ -2,10 +2,10 @@
 %% Run each section sequentially. Do not run the whole script at once. 
 
 
-%% Load files from suite2p into Seudo 
+%% 1. Load files from suite2p into Seudo 
 
-    % LoadC with relevent movie and suite2p mat filenames (from folder
-    % 'Data')
+    % Load with relevent movie (*.tif) and suite2p (.mat) filenames, from folder 'Data')
+    
         tiff_file = fullfile('Data', 'Data1438mcBSub1.tif');
         mat_file = fullfile('Data', 'Data1438mcBSub1.mat');
         ShortTitle = 'Data1438';
@@ -17,7 +17,7 @@
          % FKeep = fluorescence trace of kept ROIs
          % Fneu = neuropil fluorescence trace for kept ROIs
          % FkeepNeu =  FKeep - FkeepNeu
- %% Generate timecourse for analysis      
+ %% 2. Generate timecourse for analysis      
         
     %generate baseline timecourse where min value = 0 (FkeepBS), or neurpil subtractred timecourse (FkeepNeu * multiplier). 
         % Last number is the Fneu multiplier. 
@@ -39,7 +39,7 @@
   
       
 
-%% Variables for detection of transients: 
+%% 3. Set default variables for detection of transients using Gui (in next section): 
 
     % Parameter descriptions
     % 
@@ -97,7 +97,7 @@
     %[columnParams(1:40).stnQuality] = deal(0);
 
        
-%% Detect transients based on parameters, edit in GUI
+%% 4. Detect transients in GUI
    
         [TransientPeaks, CleanTF, ThrFracVals, UsedParams, sumTrans, stnQuality] = TFcleaner(T, ThreshFraction, FkeepBS, skipRows, meanBaseBS, stdBaseBS, stdBaseMulti, stdMovingMulti, rowWindow, peakWindow, stnQuality) ;               
         
@@ -105,14 +105,14 @@
             
          %columnParams = TF_columnParams_20250419_172022;
                             
-%% Create seudo object
+%% 5. Create seudo object
         %se = seudo(M,P)                    %analysis on raw signal
         se = seudo(M,P,'timeCourses',FkeepBS) ;  %analysis on suite2p timecourse
 
     %make file size more managable:
         clear M
         clear P
-%%  Identify transients
+%%  6. Identify transients
     
     
     % use CleanTF to compute transients
@@ -137,9 +137,9 @@
         se.classifyTransients
 
        
-%% Save     
+%% 7. Save     
         
-% in format for Christina's ORAMA analysis    
+% in format for Christina's ORAMA analysis script: ImageAnalysisHub.mlapp    
         SaveORAMA
 
 % matlab variables of transient analysis
@@ -154,3 +154,4 @@
         
         
         clear all;
+
