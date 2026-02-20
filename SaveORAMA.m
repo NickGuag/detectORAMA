@@ -4,7 +4,7 @@
 
 %make matrix for events
     detectoramaOUT.events = cell(rownum, 1);
-
+     detectoramaOUT.med = cell(rownum, 1);
 %get time course
     detectoramaOUT.traces = se.tcDefault.tc;
 
@@ -17,8 +17,10 @@
     detectoramaOUT.ROIparams = columnParams;
 %set Noise cutoff
     cutoff = .5;
-    
-    
+ %get x and y dimmensions   
+    detectoramaOUT.xdim = xdim;
+    detectoramaOUT.ydim = ydim;
+    detectoramaOUT.tif_mean = tif_mean;
 %populate detectoramaOUT.events{c}
     for c = 1:rownum
         
@@ -54,12 +56,17 @@
         end
     end
 
-%save as variables recognized by ImageAnalysisHub
+%get centroids
    
+for c = 1:rownum
+        
+        if se.tcDefault.transientInfo(c).isArtifact == 0;
+                centroid = stat_cell{1,c}.med;
+                detectoramaOUT.med{c} = centroid;
 
-
-    
-
+        end
+end
+%save as variables recognized by ImageAnalysisHub
 %save ORAMA file
     timestamp = datestr(now, 'yyyymmdd_HHMMSS');
     directory = 'C:\Users\nag4g\Documents\MATLAB\ORAMA'; %replace with Directory locations
@@ -74,3 +81,5 @@
     pathORAMA = [directory '\' ShortTitle ];
     fullPathORAMA_IAH = fullfile(pathORAMA, filenameORAMA_IAH);
      save(fullPathORAMA_IAH, 'detectoramaOUT', '-v7.3');
+
+

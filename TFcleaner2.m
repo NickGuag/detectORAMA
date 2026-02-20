@@ -1,4 +1,4 @@
-function [TransientPeaks, CleanTF, ThrFracVals, UsedParams, sumTrans, stnQuality] = TFcleaner(T, ThreshFraction, FkeepBS, skipRows, meanBaseBS, stdBaseBS, stdBaseMulti, stdMovingMulti, rowWindow, peakWindow, stnQuality)
+function [TransientPeaks, CleanTF, ThrFracVals, UsedParams, sumTrans, stnQuality] = TFcleaner2(T, ThreshFraction, FkeepBS, skipRows, meanBaseBS, stdBaseBS, stdBaseMulti, stdMovingMulti, rowWindow, peakWindow, stnQuality)
     % Input parameters and output variables documentation
     % 
 
@@ -36,7 +36,6 @@ function [TransientPeaks, CleanTF, ThrFracVals, UsedParams, sumTrans, stnQuality
     [rows, cols] = size(T);
     TransientPeaks = zeros(size(T));
     CleanTF = zeros(size(T));
-    Tcut = zeros(size(T));
     
     for c = 1:cols
         % Create working copy for this column
@@ -91,9 +90,8 @@ function [TransientPeaks, CleanTF, ThrFracVals, UsedParams, sumTrans, stnQuality
             Tcol(max(maxIdx-skipRows,1):min(maxIdx+skipRows,rownum)) = 0;
         end
 
-
         % Final cleanup with moving baseline
-        [CleanTF, ~] = BaseCutOff(CleanTF(:,c), FkeepBS(:,c), meanBaseBS(1,c), stdBaseBS(1,c), stdBaseMulti);
+        [CleanTF, ~] = BaseCutOff(T, FkeepBS, meanBaseBS, stdBaseBS, stdBaseMulti);
         CleanTF(:,c) = MovingBaseCutOff(CleanTF(:,c), FkeepBS(:,c),...
                                       stdBaseBS(1,c), stdMovingMulti, rowWindow);
 end
@@ -113,18 +111,9 @@ end
 
     % Remove transients below meanBaseBS + (stdBaseBS * stdBaseMulti)
        % Tcut = T;
-        newCol2 = zeros(size(CleanTF));
         threshFkeepBS = (stdBaseBS * stdBaseMulti) + meanBaseBS;
-        
-        for r = 1:length(CleanTF)
-            if CleanTF(r) == 1
-                if FkeepBS(r) > threshFkeepBS
-                    newCol2(r) = 1;
-                end
-            end    
-        end
-            CleanTF = newCol2;
-       
+        mask = FkeepBS < threshFkeepBS;
+        CleanTF(mask) = 0;
 end
 
 

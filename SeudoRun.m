@@ -2,27 +2,28 @@
 %% Run each section sequentially. Do not run the whole script at once. 
 
 
-%% 1. Load files from suite2p into Seudo 
+%% Load files from suite2p into Seudo 
 
-    % Load with relevent movie (*.tif) and suite2p (.mat) filenames, from folder 'Data')
-    
-        tiff_file = fullfile('Data', 'Data1438mcBSub1.tif');
-        mat_file = fullfile('Data', 'Data1438mcBSub1.mat');
-        ShortTitle = 'Data1438';
+    % LoadC with relevent movie and suite2p mat filenames (from folder
+    % 'Data')
+        tiff_file = fullfile('Data', 'Data1403mcBSub.tif');
+        mat_file = fullfile('Data', 'Data1403mcBSub1.mat');
+        ShortTitle = 'Data1403mcBSub';
         
         
-        %load data into matlab for use with suedo
+    %load data into matlab for use with suedo
          suite2p_to_seudo;
-         % F = fluorescence trace
-         % FKeep = fluorescence trace of kept ROIs
-         % Fneu = neuropil fluorescence trace for kept ROIs
-         % FkeepNeu =  FKeep - FkeepNeu
- %% 2. Generate timecourse for analysis      
+         
+     % F = fluorescence trace
+     % FKeep = fluorescence trace of kept ROIs
+     % Fneu = neuropil fluorescence trace for kept ROIs
+     % FkeepNeu =  FKeep - FkeepNeu
+ %% Generate timecourse for analysis      
         
     %generate baseline timecourse where min value = 0 (FkeepBS), or neurpil subtractred timecourse (FkeepNeu * multiplier). 
         % Last number is the Fneu multiplier. 
        
-        [FkeepBS, FkeepBSneu, FkeepNeu]=FkeepBScalcNeu(Fkeep, Fneu, .9);
+        [FkeepBS, FkeepBSneu, FkeepNeu]=FkeepBScalcNeu(Fkeep, Fneu, .99);
         
     %Run if you want to use FkeepNeu/FkeepBSneu instead of FkeepBS. Overwrites FkeepBS.
     % I have been using FkeepBS = FkeepNeu exclusively.
@@ -33,13 +34,13 @@
     %Find baseline mean and std dev from FkeepBS, within window of windowSize rows (second input value in function).
          % excludes cells from analysis (does not remove them) if min std * excSTD is < max std
          % (eliminated in isArtifact after classifyTransients)
-         
-        excSTD = 3;
-        [meanBaseBS,stdBaseBS,excludeStd] = BaselineStdFkeep(FkeepBS,110,excSTD);
-  
-      
 
-%% 3. Set default variables for detection of transients using Gui (in next section): 
+        windSize = 100;
+        excSTD = 3;
+
+        [meanBaseBS,stdBaseBS,excludeStd] = BaselineStdFkeep(FkeepBS, windSize, excSTD);  
+      
+%% Variables for detection of transients: 
 
     % Parameter descriptions
     % 
@@ -80,10 +81,10 @@
     
         peakWindow =5;  
         ThreshFraction = .01; 
-        skipRows = 6; 
-        stdBaseMulti =10; 
-        rowWindow = 7; 
-        stdMovingMulti = 5; 
+        skipRows = 5; 
+        stdBaseMulti =1; 
+        rowWindow = 15; 
+        stdMovingMulti = 6; 
         stnQuality = 0;
     
     % Put parameters together for CleanTF to read. Will overwrite any saved column parameters, so be sure to save in the GUI if you want to keep for certain cells. 
@@ -91,32 +92,28 @@
     
         [columnParams] = UpdateCleanParams(T, ThreshFraction, skipRows, stdBaseMulti, stdMovingMulti, rowWindow, peakWindow, stnQuality);      
     
-    % Retro quality scores for all columns
-    %  columnParams = evalin('base', 'columnParams');
-    % stnQualityScores = [columnParams.stnQuality];
-    %[columnParams(1:40).stnQuality] = deal(0);
-
        
-%% 4. Detect transients in GUI
+%% Detect transients based on parameters, edit in GUI
    
-        [TransientPeaks, CleanTF, ThrFracVals, UsedParams, sumTrans, stnQuality] = TFcleaner(T, ThreshFraction, FkeepBS, skipRows, meanBaseBS, stdBaseBS, stdBaseMulti, stdMovingMulti, rowWindow, peakWindow, stnQuality) ;               
+        [TransientPeaks, CleanTF, ThrFracVals, UsedParams, sumTrans, stnQuality] = TFcleaner2(T, ThreshFraction, FkeepBS, skipRows, meanBaseBS, stdBaseBS, stdBaseMulti, stdMovingMulti, rowWindow, peakWindow, stnQuality) ;               
         
         visualizeCleanTF(); 
-            
-         %columnParams = TF_columnParams_20250419_172022;
-                            
-%% 5. Create seudo object
-        %se = seudo(M,P)                    %analysis on raw signal
-        se = seudo(M,P,'timeCourses',FkeepBS) ;  %analysis on suite2p timecourse
 
-    %make file size more managable:
-        clear M
-        clear P
-%%  6. Identify transients
+     % to use a previous (saved) set of params: 
+
+         % columnParams = TF_columnParams_20250506_180843; 
+                            
+%% Create seudo object
     
+    %se = seudo(M,P);                        %analysis on raw signal
+    se = seudo(M,P,'timeCourses',FkeepBS) ;  %analysis on suite2p timecourse
+
+   
+%%  Identify transients
     
     % use CleanTF to compute transients
-         se.computeTransientInfo('default','transientFrames', CleanTF, 'tPre', 5 , 'tPost', 13)
+        
+        se.computeTransientInfo('default','transientFrames', CleanTF, 'tPre', 5 , 'tPost', 13)
         
     
     % Auto Clasify Transients  (set to detect all). May need to adjust
@@ -135,23 +132,25 @@
     % View in classifyTransients GUI, manually correct if needed. 
 
         se.classifyTransients
-
        
-%% 7. Save     
-        
-% in format for Christina's ORAMA analysis script: ImageAnalysisHub.mlapp    
-        SaveORAMA
+%% Save     
+    % make file size more managable:
+            clear M
+            clear P
+     
+    % in format for Christina's ORAMA analysis    
+            SaveORAMA
+    
+    % matlab variables of transient analysis
+            timestamp = datestr(now, 'yyyymmdd_HHMMSS');
+            directory = 'C:\Users\nag4g\Documents\MATLAB\Suedo\'; %replace with Directory locations
+            filename = "se_" + ShortTitle + "_" + timestamp + ".mat";
+            fullPath = fullfile(directory, filename);
+            save(fullPath, '-v7.3');
+            
+     % to save ORAMAs grouped by quality parameter, inputed in visualizeCleanTF():  
 
-% matlab variables of transient analysis
-        timestamp = datestr(now, 'yyyymmdd_HHMMSS');
-        directory = 'C:\Users\nag4g\Documents\MATLAB\Suedo\Nick'; %replace with Directory locations
-        filename = "se_" + ShortTitle + "_" + timestamp + ".mat";
-        fullPath = fullfile(directory, filename);
-        save(fullPath, '-v7.3');
-        
- % save ORAMAs grouped by quality, inputed in visualizeCleanTF()       
-        QualityControl;
-        
-        
-        clear all;
-
+            %QualityControl;
+            
+            
+            clear all;
